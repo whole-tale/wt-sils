@@ -1,0 +1,14 @@
+.g-config-breadcrumb-container
+
+.panel-group#g-wt-sils-options
+  .panel.panel-default
+    .panel-heading
+      .panel-title WholeTale SILS Configuration
+      .panel-body
+        form#g-wt-sils-config-form.g-wt-sils-config-form(role="form")
+          .form-group
+            label.control-label(for="g-wt-sils-icon-cache-path") Icon Cache Path
+            input#g-wt-sils-icon-cache-path.input-sm.form-control(
+                type="text", placeholder="Icon Cache Path")
+          p#g-wt-sils-error-message.g-validation-failed-message()
+          input.btn.btn-sm.btn-primary(type="submit", value="Save")
