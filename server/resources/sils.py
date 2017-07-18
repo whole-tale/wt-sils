@@ -1,5 +1,9 @@
 import cairo
-import rsvg
+
+try:
+    from gi.repository import Rsvg as rsvg
+except ImportError:
+    import rsvg
 
 from girder.api.rest import Resource
 from girder.api.rest import loadmodel
