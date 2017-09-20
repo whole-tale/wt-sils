@@ -1,0 +1,19 @@
+#!/usr/bin/python
+
+# black 2 alpha
+
+import glob
+import Image, ImageMath
+import os
+
+def colorToAlpha(inf, outf):
+	os.system("gimp -i -b '(batch-set-alph \"%s\" \"%s\")' -b '(gimp-quit 0)'" % (inf, outf))
+	
+def normalize(fn):
+	colorToAlpha(fn, fn[:-5])
+
+lst = glob.glob('*.png.orig')
+
+for fn in lst:
+	print fn
+	normalize(fn)

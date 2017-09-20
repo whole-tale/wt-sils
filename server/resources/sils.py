@@ -1,35 +1,48 @@
-import cairo
-import rsvg
+import hashlib
 
-from girder.api.rest import Resource
+from girder.api import rest
+from girder.api.rest import Resource, RestException
 from girder.api.rest import loadmodel
 from girder.constants import AccessType
 from girder.api import access
 from girder.api.describe import Description, describeRoute
+from ..lib.icongenerator2 import IconGenerator
+import threading
+import os
 
 
-def _getParam(params, name, default):
+def _getParam(params, name, default=None):
     if name in params:
         return params[name]
     else:
-        return default
+        if default is None:
+            raise RestException('Missing parameter %s' % name)
+        else:
+            return default
 
-def _getIntParam(params, name, default):
+def _getIntParam(params, name, default=None):
     if name in params:
         try:
             return int(params[name])
         except:
-            return default
+            raise RestException('Invalid value for parameter %s: %s. Expected an integer' %
+                                (name, params[name]))
     else:
-        return default
+        if default is None:
+            raise RestException('Missing parameter %s' % name)
+        else:
+            return default
 
 class SILS(Resource):
-    def __init__(self, resourcesPath):
+    def __init__(self, cachePath):
         Resource.__init__(self)
-        self.resourcesPath = resourcesPath
-        pass
+        self.cachePath = cachePath
+        self.iconGenerator = IconGenerator(cachePath + '/index')
+        self.cacheLock = threading.Lock()
+        self.generating = {}
 
-    @access.user
+
+    @access.public
     @loadmodel(model='folder', level=AccessType.READ)
     @describeRoute(
         Description('Generate an icon for a folder.')
@@ -40,9 +53,9 @@ class SILS(Resource):
             .errorResponse('Read access was denied for the folder.', 403)
     )
     def folderIcon(self, folder, params):
-        return self.icon('folder', params)
+        return self.icon('folder', self._getName(params['id']), params)
 
-    @access.user
+    @access.public
     @loadmodel(model='collection', level=AccessType.READ)
     @describeRoute(
         Description('Generate an icon for a collection.')
@@ -53,9 +66,9 @@ class SILS(Resource):
             .errorResponse('Read access was denied for the collection.', 403)
     )
     def collectionIcon(self, collection, params):
-        return self.icon('collection', params)
+        return self.icon('collection', self._getName(params['id']), params)
 
-    @access.user
+    @access.public
     @loadmodel(model='item', level=AccessType.READ)
     @describeRoute(
         Description('Generate an icon for an item.')
@@ -66,9 +79,9 @@ class SILS(Resource):
             .errorResponse('Read access was denied for the item.', 403)
     )
     def itemIcon(self, item, params):
-        return self.icon('item', params)
+        return self.icon('item', self._getName(params['id']), params)
 
-    @access.user
+    @access.public
     @describeRoute(
         Description('Generate an icon from a text snippet.')
             .param('text', 'The text to generate the icon from.', paramType='query')
@@ -76,21 +89,50 @@ class SILS(Resource):
             .param('h', 'The height of the icon. Default is 100.', paramType='query')
     )
     def iconFromText(self, params):
-        return self.icon('text', params)
+        return self.icon('text', _getParam(params, 'text'), params)
 
-    def icon(self, type, params):
-        w = _getIntParam(params, 'w', 100)
+    def icon(self, type, text, params):
+        w = _getIntParam(params, 'w', 160)
         h = _getIntParam(params, 'h', 160)
 
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
-        ctx = cairo.Context(surface)
-        ctx.scale(w, h)
+        hash = hashlib.sha224('%s-%s-%s-%s' % (type, text, w, h)).hexdigest()
+        path = self.cachePath + '/' + hash
 
-        background = rsvg.Handle(file=self.getResource(['backgrounds', type]))
-        background.render(ctx)
+        otherLock = None
+        myLock = None
+        with self.cacheLock:
+            if hash in self.generating:
+                otherLock = self.generating[hash]
+            else:
+                if os.path.isfile(path):
+                    # release cache lock and serve cached file
+                    pass
+                else:
+                    # add imageLock and generate
+                    myLock = threading.Lock()
+                    self.generating[hash] = myLock
+                    myLock.acquire()
 
+        if otherLock is not None:
+            otherLock.acquire()
+            # done generating
+            otherLock.release()
+        elif myLock is not None:
+            self.iconGenerator.generateIcon(type, text, w, h, path, params)
+            with self.cacheLock:
+                del self.generating[hash]
+                myLock.release()
+        else:
+            # neither this thread or another thread is working on this
+            pass
 
+        return self._serveFile(path)
 
-    def getResource(self, plist):
-        plist.insert(0, self.resourcesPath)
-        return '/'.join(plist)
+    def _serveFile(self, path):
+        rest.setResponseHeader('Content-Type', 'image/png')
+        def gen():
+            f = open(path)
+            for line in f:
+                yield line
+            f.close()
+        return gen

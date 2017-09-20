@@ -6,11 +6,11 @@ from .resources.sils import SILS
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
 from girder.constants import SettingDefault
+import os
 
 
 @setting_utilities.validator({
     PluginSettings.ICON_CACHE_PATH,
-    PluginSettings.RESOURCES_PATH
 })
 def validateOtherSettings(event):
     pass
@@ -18,11 +18,15 @@ def validateOtherSettings(event):
 
 def load(info):
     SettingDefault.defaults[PluginSettings.ICON_CACHE_PATH] = '/tmp/sils-cache'
-    SettingDefault.defaults[PluginSettings.RESOURCES_PATH] = '/home/mike/work/wt/repos/wt_sils/resources'
 
     settings = Setting()
 
-    sils = SILS(settings.get(PluginSettings.RESOURCES_PATH))
+    cachePath = settings.get(PluginSettings.ICON_CACHE_PATH)
+
+    if not os.path.exists(cachePath):
+        os.makedirs(cachePath)
+
+    sils = SILS(cachePath)
 
     info['apiRoot'].sils = sils
 
