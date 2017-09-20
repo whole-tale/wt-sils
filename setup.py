@@ -2,8 +2,10 @@
 # here.
 
 import nltk
+# this must NOT run as root. NLTK downloads data in ~/nltk_data, so it must be
+# run as the same user that girder runs in
 nltk.download('wordnet')
 
 import os
-# this might need root
+# this needs root
 os.system('python -m spacy download en')
