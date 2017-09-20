@@ -1,5 +1,10 @@
 import hashlib
 
+try:
+    from gi.repository import Rsvg as rsvg
+except ImportError:
+    import rsvg
+
 from girder.api import rest
 from girder.api.rest import Resource, RestException
 from girder.api.rest import loadmodel
