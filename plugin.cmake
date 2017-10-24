@@ -6,7 +6,7 @@ add_puglint_test(${PLUGIN}
     "${PROJECT_SOURCE_DIR}/plugins/${PLUGIN}/web_client/templates")
 
 add_python_test(
-  wt_data_manager
+  wt_sils
   PLUGIN ${PLUGIN}
 )
 
