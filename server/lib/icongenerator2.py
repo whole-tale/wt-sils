@@ -1,7 +1,11 @@
 import cairo
-import pango
-import pangocairo
-import rsvg
+import gi
+gi.require_version('Pango', '1.0')
+from gi.repository import Pango
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import PangoCairo
+gi.require_version('Rsvg', '2.0')
+from gi.repository import Rsvg
 import spacy
 import hashlib
 import threading
@@ -12,7 +16,7 @@ from whoosh.analysis import StemmingAnalyzer
 from whoosh.qparser import QueryParser
 import os
 import Levenshtein
-import Image, ImageFilter, ImageColor, ImageMath, ImageOps, ImageDraw
+from PIL import Image, ImageFilter, ImageColor, ImageMath, ImageOps, ImageDraw
 from nltk.corpus import wordnet
 
 
@@ -104,7 +108,7 @@ class SearchSchema(SchemaClass):
 
 def getTargetColor(hash):
     hue = hash[0] * 359 / 255
-    (r, g, b) = ImageColor.getrgb('hsl(%s, 30%%, 20%%)' % hue)
+    (r, g, b) = ImageColor.getrgb('hsl(%s, 30%%, 20%%)' % int(hue))
     return (r / 255.0, g / 255.0, b / 255.0)
 
 class Special:
@@ -193,7 +197,7 @@ class IconGenerator:
 
         icons = self.getIcons(text)
         #icons = [u'/home/mike/work/wt/repos/wt_sils/resources/icons/water.svg', u'/home/mike/work/wt/repos/wt_sils/resources/icons/sample.svg', u'/home/mike/work/wt/repos/wt_sils/resources/icons/river.svg', u'/home/mike/work/wt/repos/wt_sils/resources/icons/geography/canada.svg', Special('2016')]
-        print icons
+        print(icons)
 
         if len(icons) < 2:
             self.paintText(ctx, text, w, h, hash)
@@ -232,31 +236,30 @@ class IconGenerator:
             ctx.set_source_rgb(0.0, 0.0, 0.0)
         else:
             ctx.set_source_rgb(1.0, 1.0, 1.0)
-        pgc = pangocairo.CairoContext(ctx)
-        pgc.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+        pgc = PangoCairo.create_context(ctx)
 
-        layout = pgc.create_layout()
+        layout = Pango.Layout.new(pgc)
         fontname = FONT_FACE
         fontsz = int(h / 20)
-        font = pango.FontDescription('%s %s' % (fontname, fontsz))
+        font = Pango.FontDescription('%s %s' % (fontname, fontsz))
         layout.set_font_description(font)
 
-        layout.set_wrap(pango.WRAP_WORD)
-        layout.set_width(int(pango.SCALE * w * (1 - 2 * MARGIN)))
-        layout.set_text(text)
-        pgc.rectangle(mx, my, mw, mh)
-        pgc.clip()
+        layout.set_wrap(Pango.WrapMode.WORD)
+        layout.set_width(int(Pango.SCALE * w * (1 - 2 * MARGIN)))
+        layout.set_text(text, -1)
+        ctx.rectangle(mx, my, mw, mh)
+        ctx.clip()
 
         (tw, th) = layout.get_pixel_size()
         if th < mh / 2:
-            font = pango.FontDescription('%s %s' % (fontname, fontsz * 1.3))
+            font = Pango.FontDescription('%s %s' % (fontname, fontsz * 1.3))
             layout.set_font_description(font)
             (tw, th) = layout.get_pixel_size()
         dy = max(0, (mh - th) / 2)
-        pgc.move_to(mx, my + dy)
+        ctx.move_to(mx, my + dy)
 
-        pgc.update_layout(layout)
-        pgc.show_layout(layout)
+        PangoCairo.update_layout(ctx, layout)
+        PangoCairo.show_layout(ctx, layout)
         ctx.restore()
 
     def paintIcons(self, ctx2, icons, text, w, h, hash):
@@ -271,7 +274,7 @@ class IconGenerator:
         layout = LAYOUTS[len(icons)]
         crd = layout.cellIter()
         for icon in icons:
-            (x, y, iconSize) = crd.next()
+            (x, y, iconSize) = crd.__next__()
             px = MARGIN + x * scale
             py = MARGIN + y * scale + TOP_EXTRA_MARGIN
             iconSize = iconSize * scale
@@ -283,8 +286,8 @@ class IconGenerator:
         ctx2.paint()
 
     def getHash(self, text, nBytes):
-        digest = hashlib.sha224(text).digest()
-        return [ord(x) for x in digest[:nBytes]]
+        digest = hashlib.sha224(text.encode('utf-8')).digest()
+        return digest[:nBytes]
 
     def _scale(self, v, l, h):
         return l + (h - l) * (float(v) / 255)
@@ -303,7 +306,6 @@ class IconGenerator:
             (grayscale, mostlyDark, heavy) = self.getImageProperties(im1, icon)
 
             print('%s - grayscale: %s, mostlyDark: %s, heavy: %s' % (icon, grayscale, mostlyDark, heavy))
-
 
             if grayscale:
                 #if heavy:
@@ -329,12 +331,12 @@ class IconGenerator:
         ctx.restore()
 
     def surfaceToImage(self, surf):
-        return Image.frombuffer("RGBA", (surf.get_width(), surf.get_height()),
+        return Image.frombuffer('RGBA', (surf.get_width(), surf.get_height()),
                                surf.get_data(), 'raw', 'RGBA', 0, 1)
 
     def imageToSurface(self, im):
         if 'A' not in im.getbands():
-            im.putalpha(256)
+            im.putalpha(255)
         arr = bytearray(im.tobytes('raw', 'BGRa'))
         return cairo.ImageSurface.create_for_data(arr, cairo.FORMAT_ARGB32, im.width,
                                                   im.height)
@@ -462,7 +464,7 @@ class IconGenerator:
             if self.shouldAddToken(token):
                 lst.append(token)
 
-        print lst
+        print(lst)
 
 
         lst2 = []
@@ -618,7 +620,7 @@ class IconGenerator:
 
     def modifyColors(self, im, w, h, text, hash):
         hd = hash[0]
-        vd = int(self._scale(hash[1], -0.2, 0.2) * 255)
+        vd = int(self._scale(hash[1], -0.2, 0.2) * 100)
 
         r, g, b, a = im.split()
         imrgb = Image.merge('RGB', (r, g, b))
@@ -627,7 +629,7 @@ class IconGenerator:
         h, s, v = imhsv.split()
 
         h = ImageMath.eval("""convert((h + hd) % 256, 'L')""", h=h, hd=hd)
-        v = ImageMath.eval("""convert(min(max(v + vd, 0), 255), 'L')""", v=v, vd=vd)
+        v = ImageMath.eval("""convert(min(max(v + vd, 0), 100), 'L')""", v=v, vd=vd)
         print('%s, %s, %s' % (h.mode, s.mode, v.mode))
         imhsv = Image.merge('HSV', (h, s, v))
         imrgb = imhsv.convert('RGB')
@@ -670,11 +672,12 @@ class IconGenerator:
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
                                      int(w * OVERSAMPLING), int(h * OVERSAMPLING))
         ctx = cairo.Context(surface)
-        background = rsvg.Handle(file=name)
-        (bw, bh, bw2, bh2) = background.get_dimension_data()
-        ctx.scale(float(w * OVERSAMPLING) / bw,
-                  float(h * OVERSAMPLING) / bh)
+        background = Rsvg.Handle.new_from_file(name)
+        dim = background.get_dimensions()
+        ctx.scale(float(w * OVERSAMPLING) / dim.width,
+                  float(h * OVERSAMPLING) / dim.height)
         background.render_cairo(ctx)
+        background.close()
         return surface
 
 
