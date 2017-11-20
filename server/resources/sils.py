@@ -47,8 +47,10 @@ class SILS(Resource):
     @describeRoute(
         Description('Generate an icon for a folder.')
             .param('id', 'The ID of the folder.', paramType='path')
-            .param('w', 'The width of the icon. Default is 100.', paramType='query')
-            .param('h', 'The height of the icon. Default is 100.', paramType='query')
+            .param('w', 'The width of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
+            .param('h', 'The height of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
             .errorResponse('ID was invalid.')
             .errorResponse('Read access was denied for the folder.', 403)
     )
@@ -60,8 +62,10 @@ class SILS(Resource):
     @describeRoute(
         Description('Generate an icon for a collection.')
             .param('id', 'The ID of the collection.', paramType='path')
-            .param('w', 'The width of the icon. Default is 100.', paramType='query')
-            .param('h', 'The height of the icon. Default is 100.', paramType='query')
+            .param('w', 'The width of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
+            .param('h', 'The height of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
             .errorResponse('ID was invalid.')
             .errorResponse('Read access was denied for the collection.', 403)
     )
@@ -73,8 +77,10 @@ class SILS(Resource):
     @describeRoute(
         Description('Generate an icon for an item.')
             .param('id', 'The ID of the item.', paramType='path')
-            .param('w', 'The width of the icon. Default is 100.', paramType='query')
-            .param('h', 'The height of the icon. Default is 100.', paramType='query')
+            .param('w', 'The width of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
+            .param('h', 'The height of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
             .errorResponse('ID was invalid.')
             .errorResponse('Read access was denied for the item.', 403)
     )
@@ -85,15 +91,17 @@ class SILS(Resource):
     @describeRoute(
         Description('Generate an icon from a text snippet.')
             .param('text', 'The text to generate the icon from.', paramType='query')
-            .param('w', 'The width of the icon. Default is 100.', paramType='query')
-            .param('h', 'The height of the icon. Default is 100.', paramType='query')
+            .param('w', 'The width of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
+            .param('h', 'The height of the icon. Default is 100.', paramType='query',
+                   default=100, required=False)
     )
     def iconFromText(self, params):
         return self.icon('text', _getParam(params, 'text'), params)
 
     def icon(self, type, text, params):
-        w = _getIntParam(params, 'w', 160)
-        h = _getIntParam(params, 'h', 160)
+        w = _getIntParam(params, 'w', 100)
+        h = _getIntParam(params, 'h', 100)
 
         uid = '%s-%s-%s-%s' % (type, text, w, h)
         hash = hashlib.sha224(uid.encode()).hexdigest()
