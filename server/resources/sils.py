@@ -95,7 +95,8 @@ class SILS(Resource):
         w = _getIntParam(params, 'w', 160)
         h = _getIntParam(params, 'h', 160)
 
-        hash = hashlib.sha224('%s-%s-%s-%s' % (type, text, w, h)).hexdigest()
+        uid = '%s-%s-%s-%s' % (type, text, w, h)
+        hash = hashlib.sha224(uid.encode()).hexdigest()
         path = self.cachePath + '/' + hash
 
         otherLock = None
@@ -131,8 +132,7 @@ class SILS(Resource):
     def _serveFile(self, path):
         rest.setResponseHeader('Content-Type', 'image/png')
         def gen():
-            f = open(path)
-            for line in f:
-                yield line
-            f.close()
+            with open(path, 'rb') as f:
+                for line in f:
+                    yield line
         return gen
