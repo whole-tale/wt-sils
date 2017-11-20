@@ -8,4 +8,4 @@ nltk.download('wordnet')
 
 import os
 # this needs root
-os.system('python -m spacy download en')
+os.system('python3 -m spacy download en')
