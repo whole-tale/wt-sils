@@ -142,6 +142,7 @@ class IconGenerator:
     def __init__(self, indexPath):
         self.iconPath = RESOURCES_DIR + '/icons'
         self.indexPath = indexPath
+        print('SILS: Loading language data. This will take some time.')
         self.nlp = spacy.load('en')
         self.iconVectors = {}
         self.iconPaths = {}
@@ -687,10 +688,10 @@ class IconGenerator:
 
 if __name__ == "__main__":
     ig = IconGenerator('/tmp/sils-cache')
-    ig.generateIcon('folder', 'Water samples from rivers and estuaries in the Canadian Arctic Archipelago, 2016', 256, 256, '/tmp/col/img1.png', {})
-    ig.generateIcon('folder', 'Togiak Archaeological and Paleoecological Project', 256, 256, '/tmp/col/img2.png', {})
-    ig.generateIcon('folder', 'Spatiotemporal Gypsy Moth Defoliation Data, Northeastern USA, 1975-2009', 256, 256, '/tmp/col/img3.png', {})
-    ig.generateIcon('folder', 'Photogrammetric scans of aerial photographs of North American glaciers, 1992. Roll 5 tiffs', 256, 256, '/tmp/col/img4.png', {})
-    ig.generateIcon('folder', 'SNAPP - Mapping the Global Potential for Marine Aquaculture', 256, 256, '/tmp/col/img5.png', {})
-    ig.generateIcon('folder', 'Humans and Hydrology at High Latitudes: Water Use Information', 256, 256, '/tmp/col/img6.png', {})
+    ig.generateIcon('folder', 'Water samples from rivers and estuaries in the Canadian Arctic Archipelago, 2016', 256, 256, '/tmp/img1.png', {})
+    ig.generateIcon('folder', 'Togiak Archaeological and Paleoecological Project', 256, 256, '/tmp/img2.png', {})
+    ig.generateIcon('folder', 'Spatiotemporal Gypsy Moth Defoliation Data, Northeastern USA, 1975-2009', 256, 256, '/tmp/img3.png', {})
+    ig.generateIcon('folder', 'Photogrammetric scans of aerial photographs of North American glaciers, 1992. Roll 5 tiffs', 256, 256, '/tmp/img4.png', {})
+    ig.generateIcon('folder', 'SNAPP - Mapping the Global Potential for Marine Aquaculture', 256, 256, '/tmp/img5.png', {})
+    ig.generateIcon('folder', 'Humans and Hydrology at High Latitudes: Water Use Information', 256, 256, '/tmp/img6.png', {})
 
